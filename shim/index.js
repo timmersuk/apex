@@ -40,7 +40,10 @@ function nextId(){
  * Child process for binary I/O.
  */
 
-var proc = child.spawn('./main', { stdio: ['pipe', 'pipe', process.stderr] });
+var proc = child.spawn('./main', { stdio: ['pipe', 'pipe', 'pipe'] });
+proc.stderr.on('data', function(output){
+  console.log('[child] - %s', output);
+});
 
 proc.on('error', function(err){
   console.error('[shim] error: %s', err);
