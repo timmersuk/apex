@@ -75,6 +75,10 @@ func (z *Zip) AddFile(path string, file *os.File) error {
 	header.Method = zip.Deflate
 	header.SetModTime(time.Unix(0, 0))
 
+	// TDXX
+	mode := int(0777)
+	header.SetMode(os.FileMode(mode))
+
 	zippedFile, err := z.writer.CreateHeader(header)
 	if err != nil {
 		return err

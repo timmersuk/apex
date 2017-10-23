@@ -2,6 +2,7 @@
 package golang
 
 import (
+	"runtime"
 	"strings"
 
 	"github.com/apex/apex/function"
@@ -27,7 +28,11 @@ func (p *Plugin) Open(fn *function.Function) error {
 	}
 
 	if fn.Hooks.Build == "" {
-		fn.Hooks.Build = "GOOS=linux GOARCH=amd64 go build -o main *.go"
+		if runtime.GOOS == "windows" {
+			fn.Hooks.Build = "set GOOS=linux& set GOARCH=amd64& go build -o main"
+		} else {
+			fn.Hooks.Build = "GOOS=linux GOARCH=amd64 go build -o main *.go"
+		}
 	}
 
 	fn.Shim = true
@@ -38,7 +43,11 @@ func (p *Plugin) Open(fn *function.Function) error {
 	}
 
 	if fn.Hooks.Clean == "" {
-		fn.Hooks.Clean = "rm -f main"
+		if runtime.GOOS == "windows" {
+			fn.Hooks.Clean = "del /F main"
+		} else {
+			fn.Hooks.Clean = "rm -f main"
+		}
 	}
 
 	return nil
