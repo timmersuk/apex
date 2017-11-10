@@ -159,13 +159,19 @@ func ProfileFromConfig(environment string) (string, error) {
 }
 
 // AssumeRole uses STS to assume the given `role`.
-func AssumeRole(role string, config *aws.Config) (*aws.Config, error) {
-	stscreds := sts.New(session.New(config))
+func AssumeRole(role, mfaDeviceSerial, mfaTokenCode string, config *aws.Config) (*aws.Config, error) {
+	stscreds := sts.New(session.Must(session.NewSession(config)))
 
 	params := &sts.AssumeRoleInput{
 		RoleArn:         &role,
 		RoleSessionName: aws.String("apex"),
 		DurationSeconds: aws.Int64(1800),
+	}
+	if mfaDeviceSerial != "" {
+		params.SerialNumber = &mfaDeviceSerial
+	}
+	if mfaTokenCode != "" {
+		params.TokenCode = &mfaTokenCode
 	}
 
 	res, err := stscreds.AssumeRole(params)

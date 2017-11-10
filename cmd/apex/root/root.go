@@ -13,6 +13,7 @@ import (
 	"github.com/apex/apex/dryrun"
 	"github.com/apex/apex/project"
 	"github.com/apex/apex/utils"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 )
 
 // environment for project.
@@ -35,6 +36,12 @@ var iamrole string
 
 // region for AWS.
 var region string
+
+// MFA Token Serial Number for AWS
+var mfaDeviceSerial string
+
+// MFA Token code for AWS
+var mfaTokenCode string
 
 // Session instance.
 var Session *session.Session
@@ -69,6 +76,8 @@ func init() {
 	f.StringVarP(&profile, "profile", "p", "", "AWS profile")
 	f.StringVarP(&iamrole, "iamrole", "i", "", "AWS iamrole")
 	f.StringVarP(&region, "region", "r", "", "AWS region")
+	f.StringVarP(&mfaDeviceSerial, "serial-number", "S", "","AWS MFA Device Serial Number/ARN")
+	f.StringVarP(&mfaTokenCode, "token-code", "t", "","AWS MFA Code from Token")
 }
 
 // PreRunNoop noop for other commands.
@@ -147,14 +156,19 @@ func Prepare(c *cobra.Command, args []string) error {
 	}
 
 	if iamrole != "" {
-		config, err := utils.AssumeRole(iamrole, Config)
+		config, err := utils.AssumeRole(iamrole, mfaDeviceSerial, mfaTokenCode, Config)
 		if err != nil {
 			return errors.Wrap(err, "assuming role")
 		}
 		Config = config
 	}
 
-	Session = session.New(Config)
+	// Enable SDK's Shared Config support.
+	Session = session.Must(session.NewSessionWithOptions(session.Options{
+		Config: *Config,
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+		SharedConfigState: session.SharedConfigEnable,
+	}))
 
 	Project = &project.Project{
 		Environment:      environment,
